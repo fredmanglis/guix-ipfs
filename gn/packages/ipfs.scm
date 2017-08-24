@@ -5,6 +5,7 @@
   #:use-module (gnu packages base)
   #:use-module (gnu packages golang)
   #:use-module (guix download)
+  #:use-module (guix git-download)
   #:use-module (guix packages)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system gnu))
@@ -70,6 +71,136 @@ syslog, file and memory.  Multiple backends can be utilized with different log
 levels per backend and logger.")
    (license license:bsd-3)))
 
+(define-public go-logging-whyrusleeping
+  (let ((commit "0457bb6b88fc1973573aaf6b5145d8d3ae972390")
+	(revision "1"))
+    (package
+     (name "go-logging")
+     (version (string-append "0.0.0-" revision (string-take commit 7)))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+	     (url "https://github.com/whyrusleeping/go-logging.git")
+	     (commit commit)))
+       (sha256
+	(base32
+	 "1bl180mhg03hdqhyr5sfjcg16ns2ppal625g9ag5m10l2pvlwnqn"))))
+     (build-system gnu-build-system)
+     (native-inputs
+      `(("go" ,go)))
+     (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	  'build
+	  'fix-typo
+	  (lambda* _
+	    (substitute* "example_test.go"
+			(("log.Debug") "log.Debugf"))))
+	 (add-before
+	  'build
+	  'setup-go-workspace
+	  (lambda* _
+	    (mkdir-p (string-append
+		      (getcwd)
+		      "/../gopath/src/github.com/whyrusleeping/go-logging"))
+	    (copy-recursively
+	     (getcwd)
+	     (string-append
+	      (getcwd)
+	      "/../gopath/src/github.com/whyrusleeping/go-logging"))))
+	 (replace 'build
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let* ((cwd (getcwd))
+			   (gopath (string-append (getcwd) "/../gopath")))
+		      (setenv "GOPATH" gopath)
+		      (zero? (system* "go" "install" "github.com/whyrusleeping/go-logging")))))
+	 (replace 'check
+		  (lambda* _
+		    (zero? (system* "go" "test" "github.com/whyrusleeping/go-logging"))))
+	 (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath"))
+			  (pwd (getcwd)))
+		      (and (chdir gopath)
+			   (copy-recursively
+			    (string-append gopath "/pkg")
+			    (string-append out "/pkg"))
+			   (chdir pwd))))))))
+     (home-page "https://github.com/whyrusleeping/go-logging")
+     (synopsis "Golang logging library")
+     (description "Package logging implements a logging infrastructure for Go.
+Its output format is customizable and supports different logging backends like
+syslog, file and memory.  Multiple backends can be utilized with different log
+levels per backend and logger.")
+     (license license:bsd-3))))
+
+(define-public go-log
+  (let ((commit "48d644b006ba26f1793bffc46396e981801078e3")
+	(revision "1"))
+    (package
+     (name "go-log")
+     (version (string-append "0.0.0-" revision "." (string-take commit 7)))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+	     (url "https://github.com/ipfs/go-log.git")
+	     (commit commit)))
+       (sha256
+	(base32
+	 "0q2bk2s2v626ikm2pjalq4qg4n53yyf1bb81jbljb23iijxrqsbr"))))
+     (build-system gnu-build-system)
+     (native-inputs
+      `(("go" ,go)
+	("go-logging" ,go-logging-whyrusleeping)))
+     (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	  'build
+	  'setup-go-workspace
+	  (lambda* _
+	    (mkdir-p (string-append
+		      (getcwd)
+		      "/../gopath/src/github.com/ipfs/go-log"))
+	    (copy-recursively
+	     (getcwd)
+	     (string-append
+	      (getcwd)
+	      "/../gopath/src/github.com/ipfs/go-log"))))
+	 (replace 'build
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let* ((cwd (getcwd))
+			   (gopath (string-append (getcwd) "/../gopath")))
+		      (setenv "GOPATH" gopath)
+		      (zero? (system* "go" "install" "github.com/ipfs/go-log")))))
+	 (replace 'check
+		  (lambda* _
+		    (zero? (system* "go" "test" "github.com/ipfs/go-log"))))
+	 (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath"))
+			  (pwd (getcwd)))
+		      (and (chdir gopath)
+			   (copy-recursively
+			    (string-append gopath "/pkg")
+			    (string-append out "/pkg"))
+			   (chdir pwd))))))))
+     (home-page "https://github.com/ipfs/go-log")
+     (synopsis "Logging library used by go-ipfs")
+     (description "A logging library used by go-ipfs.  It currently uses a
+modified version of @code{go-logging} to implement the standard printf-style
+log output.")
+     (license license:expat))))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
@@ -87,8 +218,8 @@ levels per backend and logger.")
     (native-inputs
      `(("make" ,gnu-make)
        ("go" ,go)
-       ;;("go-gx" ,go-gx)
-       ))
+       ("go-logging" ,go-logging-whyrusleeping)
+       ("go-log" ,go-log)))
     (arguments
      `(#:phases
        (modify-phases %standard-phases
