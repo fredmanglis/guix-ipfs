@@ -9,6 +9,67 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system gnu))
 
+(define-public go-logging
+  (package
+   (name "go-logging")
+   (version "1")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append
+	   "https://github.com/op/go-logging/archive/v"
+	   version
+	   ".tar.gz"))
+     (sha256
+      (base32
+       "1g6rfcql1xbwbmh6b3rjmmpl5fxp4z677v1b2g6gn7hcrbrj954l"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("go" ,go)))
+   (arguments
+    `(#:phases
+      (modify-phases
+       %standard-phases
+       (delete 'configure)
+       (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/op/go-logging"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/op/go-logging"))))
+       (replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath (string-append (getcwd) "/../gopath")))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/op/go-logging")))))
+       (replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/op/go-logging"))))
+       (replace 'install
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let ((out (assoc-ref outputs "out"))
+		   (gopath (string-append (getcwd) "/../gopath"))
+		   (pwd (getcwd)))
+	       (and (chdir gopath)
+		    (copy-recursively
+		     (string-append gopath "/pkg")
+		     (string-append out "/pkg"))
+		    (chdir pwd))))))))
+   (home-page "https://github.com/op/go-logging")
+   (synopsis "Golang logging library")
+   (description "Package logging implements a logging infrastructure for Go.
+Its output format is customizable and supports different logging backends like
+syslog, file and memory.  Multiple backends can be utilized with different log
+levels per backend and logger.")
+   (license license:bsd-3)))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
