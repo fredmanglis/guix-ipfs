@@ -2,6 +2,7 @@
 ;;; Copyright © 2017 Muriithi Frederick Muriuki <fredmanglis@gmail.com>
 
 (define-module (gn packages ipfs)
+  #:use-module (guix store)
   #:use-module (gnu packages base)
   #:use-module (gnu packages golang)
   #:use-module (guix download)
@@ -54,15 +55,11 @@
 	 (lambda* _
 	   (zero? (system* "go" "test" "github.com/op/go-logging"))))
        (replace 'install
-	   (lambda* (#:key outputs #:allow-other-keys)
-	     (let ((out (assoc-ref outputs "out"))
-		   (gopath (string-append (getcwd) "/../gopath"))
-		   (pwd (getcwd)))
-	       (and (chdir gopath)
-		    (copy-recursively
-		     (string-append gopath "/pkg")
-		     (string-append out "/pkg"))
-		    (chdir pwd))))))))
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion gopath
+			(copy-recursively "." out))))))))
    (home-page "https://github.com/op/go-logging")
    (synopsis "Golang logging library")
    (description "Package logging implements a logging infrastructure for Go.
@@ -124,13 +121,9 @@ levels per backend and logger.")
 	 (replace 'install
 		  (lambda* (#:key outputs #:allow-other-keys)
 		    (let ((out (assoc-ref outputs "out"))
-			  (gopath (string-append (getcwd) "/../gopath"))
-			  (pwd (getcwd)))
-		      (and (chdir gopath)
-			   (copy-recursively
-			    (string-append gopath "/pkg")
-			    (string-append out "/pkg"))
-			   (chdir pwd))))))))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion gopath
+			(copy-recursively "." out))))))))
      (home-page "https://github.com/whyrusleeping/go-logging")
      (synopsis "Golang logging library")
      (description "Package logging implements a logging infrastructure for Go.
@@ -177,8 +170,19 @@ levels per backend and logger.")
 	      "/../gopath/src/github.com/ipfs/go-log"))))
 	 (replace 'build
 		  (lambda* (#:key outputs #:allow-other-keys)
-		    (let* ((cwd (getcwd))
-			   (gopath (string-append (getcwd) "/../gopath")))
+		    (let ((gopath
+			    (string-append
+			     (getcwd)
+			     "/../gopath:"
+			     (with-store store
+			       (package-output store go-logging-whyrusleeping))))
+			   ;; (gopath
+			   ;;  (string-append
+			   ;;   (getcwd)
+			   ;;   "/../gopath"
+			   ;;   ":"
+			   ;;   "/gnu/store/i9k6aazinn1jk7mxdr95kpykw80148zs-go-logging-0.0.0-10457bb6"))
+			   )
 		      (setenv "GOPATH" gopath)
 		      (zero? (system* "go" "install" "github.com/ipfs/go-log")))))
 	 (replace 'check
