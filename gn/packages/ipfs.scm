@@ -185,13 +185,10 @@ levels per backend and logger.")
 	 (replace 'install
 		  (lambda* (#:key outputs #:allow-other-keys)
 		    (let ((out (assoc-ref outputs "out"))
-			  (gopath (string-append (getcwd) "/../gopath"))
-			  (pwd (getcwd)))
-		      (and (chdir gopath)
-			   (copy-recursively
-			    (string-append gopath "/pkg")
-			    (string-append out "/pkg"))
-			   (chdir pwd))))))))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion
+		       gopath
+		       (copy-recursively "." out))))))))
      (home-page "https://github.com/ipfs/go-log")
      (synopsis "Logging library used by go-ipfs")
      (description "A logging library used by go-ipfs.  It currently uses a
@@ -247,8 +244,9 @@ log output.")
 		  (lambda* (#:key outputs #:allow-other-keys)
 		    (let ((out (assoc-ref outputs "out"))
 			  (gopath (string-append (getcwd) "/../gopath")))
-		      (with-directory-excursion gopath
-			(copy-recursively "." out))))))))
+		      (with-directory-excursion
+		       gopath
+		       (copy-recursively "." out))))))))
      (home-page "https://github.com/jbenet/go-randbuf")
      (synopsis "Generate a random []byte of size n")
      (description "Generate a random []byte of size n")
