@@ -174,14 +174,8 @@ levels per backend and logger.")
 			    (string-append
 			     (getcwd)
 			     "/../gopath:"
-			     (with-store store
+			     ,(with-store store
 			       (package-output store go-logging-whyrusleeping))))
-			   ;; (gopath
-			   ;;  (string-append
-			   ;;   (getcwd)
-			   ;;   "/../gopath"
-			   ;;   ":"
-			   ;;   "/gnu/store/i9k6aazinn1jk7mxdr95kpykw80148zs-go-logging-0.0.0-10457bb6"))
 			   )
 		      (setenv "GOPATH" gopath)
 		      (zero? (system* "go" "install" "github.com/ipfs/go-log")))))
