@@ -199,6 +199,61 @@ modified version of @code{go-logging} to implement the standard printf-style
 log output.")
      (license license:expat))))
 
+(define-public go-randbuf
+  (let ((commit "674640a50e6a1331d97d8efcfc43977ffe64897c")
+	(revision "1"))
+    (package
+     (name "go-randbuf")
+     (version (string-append "0.0.0-" revision "." (string-take commit 7)))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+	     (url "https://github.com/jbenet/go-randbuf.git")
+	     (commit commit)))
+       (sha256
+	(base32
+	 "0mqlmpl9jfg66n61jvg7pl2i65i6sm3v0mx47q8nldz2ywm146ig"))))
+     (build-system gnu-build-system)
+     (native-inputs
+      `(("go" ,go)))
+     (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	  'build
+	  'setup-go-workspace
+	  (lambda* _
+	    (mkdir-p (string-append
+		      (getcwd)
+		      "/../gopath/src/github.com/jbenet/go-randbuf"))
+	    (copy-recursively
+	     (getcwd)
+	     (string-append
+	      (getcwd)
+	      "/../gopath/src/github.com/jbenet/go-randbuf"))))
+	 (replace 'build
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let* ((cwd (getcwd))
+			   (gopath (string-append (getcwd) "/../gopath")))
+		      (setenv "GOPATH" gopath)
+		      (zero? (system* "go" "install" "github.com/jbenet/go-randbuf")))))
+	 (replace 'check
+		  (lambda* _
+		    (zero? (system* "go" "test" "github.com/jbenet/go-randbuf"))))
+	 (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion gopath
+			(copy-recursively "." out))))))))
+     (home-page "https://github.com/jbenet/go-randbuf")
+     (synopsis "Generate a random []byte of size n")
+     (description "Generate a random []byte of size n")
+     (license license:expat))))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
