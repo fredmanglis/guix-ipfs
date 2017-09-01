@@ -252,6 +252,70 @@ log output.")
      (description "Generate a random []byte of size n")
      (license license:expat))))
 
+(define-public go-msgio
+  (let ((commit "242a3f4ed2d0098bff2f25b1bd32f4254e803b23")
+	(revision "1"))
+    (package
+     (name "go-msgio")
+     (version (string-append "0.0.0-" revision "." (string-take commit 7)))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+	     (url "https://github.com/jbenet/go-msgio.git")
+	     (commit commit)))
+       (sha256
+	(base32
+	 "111w6y4kyls4p0azzv42m2dkalkpyji5wrawxyzpa5h100qqh3g9"))))
+     (build-system gnu-build-system)
+     (native-inputs
+      `(("go" ,go)
+	("go-randbuf" ,go-randbuf)))
+     (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/jbenet/go-msgio"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/jbenet/go-msgio"))))
+       (replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath
+		     (string-append
+		      (getcwd)
+		      "/../gopath:"
+		      ,(with-store
+			store
+			(package-output store go-randbuf)))))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/jbenet/go-msgio")))))
+       (replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/jbenet/go-msgio"))))
+       (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion
+		       gopath
+		       (copy-recursively "." out))))))))
+     (home-page "https://github.com/jbenet/go-msgio")
+     (synopsis "Simple package to read/write length-delimited slices")
+     (description "This is a simple package that helps read and write
+length-delimited slices.  It is helpful for building wire protocols.")
+     (license license:expat))))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
