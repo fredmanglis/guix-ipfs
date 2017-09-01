@@ -316,6 +316,82 @@ log output.")
 length-delimited slices.  It is helpful for building wire protocols.")
      (license license:expat))))
 
+(define-public go-gogo-protobuf
+  (package
+   (name "go-gogo-protobuf")
+   (version "0.4")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append "https://github.com/gogo/protobuf/archive/v"
+			 version
+			 ".tar.gz"))
+     (sha256
+      (base32
+       "0w7glv0kwpavfrmzin01jvzqaj1cbykwh14q81bg2jldka5m1yv4"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("go" ,go)
+      ;; C++ implementation of protocol buffers from https://developers.google.com/protocol-buffers/
+      ))
+   (arguments
+    `(#:phases
+      (modify-phases
+       %standard-phases
+       (delete 'configure)
+       (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/gogo/protobuf"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/gogo/protobuf"))))
+       (replace 'build
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let* ((cwd (getcwd))
+			 (gopath
+			  (string-append
+			   (getcwd)
+			   "/../gopath"
+			   ;; "/../gopath:"
+			   ;; ,(with-store
+			   ;; 	store
+			   ;; 	(package-output store go-randbuf))
+			   )))
+		    (setenv "GOPATH" gopath)
+		    ;; figure out what needs be built here. Maybe split it into
+		    ;; separate definitions, all inheriting from a common parent
+		    ;; each building a separate item: proto, gogoproto, etc.
+		    (zero? (system* "go" "install" "github.com/gogo/protobuf")))))
+       (replace 'check
+		(lambda* _
+		  (zero? (system* "go" "test" "github.com/gogo/protobuf"))))
+       (replace 'install
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let ((out (assoc-ref outputs "out"))
+			(gopath (string-append (getcwd) "/../gopath")))
+		    (with-directory-excursion
+		     gopath
+		     (copy-recursively "." out))))))))
+   (home-page "https://github.com/gogo/protobuf")
+   (synopsis " Protocol Buffers for Go with Gadgets")
+   (description "This is a fork of https://github.com/golang/protobuf with
+extra code generation features.  The code generation is used to achieve:
+@itemize
+@item fast marshalling and unmarshalling
+@item more canonical Go structures
+@item goprotobuf compatibility
+@item less typing by optionally generating extra helper code
+@item peace of mind by optionally generating test and benchmark code
+@item other serialization formats
+@end itemize")
+   (license #f)))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
