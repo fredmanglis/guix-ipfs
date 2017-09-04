@@ -597,6 +597,65 @@ wallet functionality and this was a very intentional design decision.")
      (description "Various cryptographic utilities used by ipfs")
      (license license:expat))))
 
+(define-public go-crypto
+  (let ((commit "81e90905daefcd6fd217b62423c0908922eadb30")
+	(revision "1"))
+    (package
+     (name "go-crypto")
+     (version (string-append "0.0.0-" revision "." (string-take commit 7)))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+	     (url "https://github.com/golang/crypto.git")
+	     (commit commit)))
+       (sha256
+	(base32
+	 "0f13r2jcnbhcl86jclmy7iwz0aldh0zdxya1mrslk7cbfdlg8r23"))))
+     (build-system gnu-build-system)
+     (native-inputs
+      `(("go" ,go)))
+     (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/golang/crypto"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/golang/crypto"))))
+       (replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath
+		     (string-append
+		      (getcwd)
+		      "/../gopath")))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/golang/crypto")))))
+       (replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/golang/crypto"))))
+       (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion
+		       gopath
+		       (copy-recursively "." out))))))))
+     (home-page "https://github.com/golang/crypto")
+     (synopsis "Go supplementary cryptography libraries")
+     (description "Go supplementary cryptography libraries")
+     (license license:bsd-3))))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
