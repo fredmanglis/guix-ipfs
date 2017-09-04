@@ -407,7 +407,7 @@ extra code generation features.  The code generation is used to achieve:
 	     (commit commit)))
        (sha256
 	(base32
-	 "0hz3vjm9hwhx9ycc86av2zc43r5x4fcaxrgi2655nkvmhkh6sdjz"))))
+	 "1v8mhkf1m3ga5262s75vabskxvsw5rpqvi5nwhxwiv7gfk6h823i"))))
      (build-system gnu-build-system)
      (native-inputs
       `(("go" ,go)))
