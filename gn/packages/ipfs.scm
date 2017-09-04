@@ -535,6 +535,68 @@ One key difference between btcd and Bitcoin Core is that btcd does NOT include
 wallet functionality and this was a very intentional design decision.")
    (license license:isc)))
 
+(define-public go-btclog
+  (package
+   (name "go-btclog")
+   (version "BTCLOG_0_0_3")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append "https://github.com/btcsuite/btclog/archive/"
+			 version
+			 ".tar.gz"))
+     (sha256
+      (base32
+       "0lqxpb9yyzn41c36vymf06mdd42rqly8liaxpbzk03dzrhhfkav5"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("go" ,go)))
+   (arguments
+    `(#:phases
+      (modify-phases
+       %standard-phases
+       (delete 'configure)
+       (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/btcsuite/btclog"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/btcsuite/btclog"))))
+       (replace 'build
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let* ((cwd (getcwd))
+			 (gopath
+			  (string-append
+			   (getcwd)
+			   "/../gopath:"
+			   ,(with-store
+			     store
+			     (package-output store go-randbuf)))))
+		    (setenv "GOPATH" gopath)
+		    (zero? (system* "go" "install" "github.com/btcsuite/btclog")))))
+       (replace 'check
+		(lambda* _
+		  (zero? (system* "go" "test" "github.com/btcsuite/btcd"))))
+       (replace 'install
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let ((out (assoc-ref outputs "out"))
+			(gopath (string-append (getcwd) "/../gopath")))
+		    (with-directory-excursion
+		     gopath
+		     (copy-recursively "." out))))))))
+   (home-page "https://github.com/btcsuite/btclog")
+   (synopsis "Package btclog implements a subsystem aware logger")
+   (description "Package btclog defines a logger interface and provides a
+default implementation of a subsystem-aware leveled logger implementing the same
+interface.")
+   (license license:isc)))
+
 (define-public go-libp2p-crypto
   (let ((commit "e89e1de117dd65c6129d99d1d853f48bc847cf17")
 	(revision "1"))
