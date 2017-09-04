@@ -535,6 +535,68 @@ One key difference between btcd and Bitcoin Core is that btcd does NOT include
 wallet functionality and this was a very intentional design decision.")
    (license license:isc)))
 
+(define-public go-libp2p-crypto
+  (let ((commit "e89e1de117dd65c6129d99d1d853f48bc847cf17")
+	(revision "1"))
+    (package
+     (name "go-libp2p-crypto")
+     (version (string-append "0.0.0-" revision "." (string-take commit 7)))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+	     (url "https://github.com/libp2p/go-libp2p-crypto.git")
+	     (commit commit)))
+       (sha256
+	(base32
+	 "09624wrfwcxxjgdlwfl5l3zwiiv9fr1d2cs009cca6zsb5mziaq5"))))
+     (build-system gnu-build-system)
+     (native-inputs
+      `(("go" ,go)))
+     (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/libp2p/go-libp2p-crypto"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/libp2p/go-libp2p-crypto"))))
+       (replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath
+		     (string-append
+		      (getcwd)
+		      "/../gopath:"
+		      ,(with-store
+			store
+			(package-output store go-randbuf)))))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/libp2p/go-libp2p-crypto")))))
+       (replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/libp2p/go-libp2p-crypto"))))
+       (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion
+		       gopath
+		       (copy-recursively "." out))))))))
+     (home-page "https://github.com/libp2p/go-libp2p-crypto")
+     (synopsis "Various cryptographic utilities used by ipfs")
+     (description "Various cryptographic utilities used by ipfs")
+     (license license:expat))))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
