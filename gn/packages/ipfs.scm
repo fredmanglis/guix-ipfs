@@ -455,6 +455,86 @@ extra code generation features.  The code generation is used to achieve:
      (description "ed25519 public-key signature system for Go")
      (license license:bsd-3))))
 
+(define-public go-btcd
+  (package
+   (name "go-btcd")
+   (version "0.12.0-beta")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append "https://github.com/btcsuite/btcd/archive/BTCD_"
+			 (string-upcase
+			  (transform-string
+			   (transform-string version "." "_")
+			   "-"
+			   "_"))
+			 ".tar.gz"))
+     (sha256
+      (base32
+       "18s65raxxjr7gx7af3g8i8jicl0k60dpihavn7z1mrsa0wcgrsiy"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("go" ,go)))
+   (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/btcsuite/btcd"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/btcsuite/btcd"))))
+       (replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath
+		     (string-append
+		      (getcwd)
+		      "/../gopath:"
+		      ,(with-store
+			store
+			(package-output store go-randbuf)))))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/btcsuite/btcd")))))
+       (replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/btcsuite/btcd"))))
+       (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion
+		       gopath
+		       (copy-recursively "." out))))))))
+   (home-page "https://github.com/btcsuite/btcd/")
+   (synopsis "Alternative full node bitcoin implementation written in Go (golang)")
+   (description "btcd is an alternative full node bitcoin implementation written
+in Go (golang).  It properly downloads, validates, and serves the block chain
+using the exact rules (including consensus bugs) for block acceptance as Bitcoin
+Core.  It does not cause a fork in the block chain.   It includes a full block
+validation testing framework which contains all of the 'official' block
+acceptance tests (and some additional ones) that is run on every pull request to
+help ensure it properly follows consensus. Also, it passes all of the JSON test
+data in the Bitcoin Core code.
+
+It also properly relays newly mined blocks, maintains a transaction pool, and
+relays individual transactions that have not yet made it into a block. It
+ensures all individual transactions admitted to the pool follow the rules
+required by the block chain and also includes more strict checks which filter
+transactions based on miner requirements ('standard' transactions).
+
+One key difference between btcd and Bitcoin Core is that btcd does NOT include
+wallet functionality and this was a very intentional design decision.")
+   (license license:isc)))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
