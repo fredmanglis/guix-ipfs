@@ -9,7 +9,8 @@
   #:use-module (guix git-download)
   #:use-module (guix packages)
   #:use-module ((guix licenses) #:prefix license:)
-  #:use-module (guix build-system gnu))
+  #:use-module (guix build-system gnu)
+  #:use-module (texinfo string-utils))
 
 (define-public go-logging
   (package
@@ -391,6 +392,68 @@ extra code generation features.  The code generation is used to achieve:
 @item other serialization formats
 @end itemize")
    (license #f)))
+
+(define-public go-ed25519
+  (let ((commit "5312a61534124124185d41f09206b9fef1d88403")
+	(revision "1"))
+    (package
+     (name "go-ed25519")
+     (version (string-append "0.0.0-" revision "." (string-take commit 7)))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+	     (url "https://github.com/agl/ed25519.git")
+	     (commit commit)))
+       (sha256
+	(base32
+	 "0hz3vjm9hwhx9ycc86av2zc43r5x4fcaxrgi2655nkvmhkh6sdjz"))))
+     (build-system gnu-build-system)
+     (native-inputs
+      `(("go" ,go)))
+     (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/agl/ed25519"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/agl/ed25519"))))
+       (replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath
+		     (string-append
+		      (getcwd)
+		      "/../gopath:"
+		      ,(with-store
+			store
+			(package-output store go-randbuf)))))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/agl/ed25519")))))
+       (replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/agl/ed25519"))))
+       (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion
+		       gopath
+		       (copy-recursively "." out))))))))
+     (home-page "https://github.com/agl/ed25519")
+     (synopsis "ed25519 public-key signature system for Go")
+     (description "ed25519 public-key signature system for Go")
+     (license license:bsd-3))))
 
 (define-public go-ipfs
   (package
