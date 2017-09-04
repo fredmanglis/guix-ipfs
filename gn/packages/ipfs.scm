@@ -577,7 +577,7 @@ wallet functionality and this was a very intentional design decision.")
 			   "/../gopath:"
 			   ,(with-store
 			     store
-			     (package-output store go-randbuf)))))
+			     (package-output store go-seelog-conformal)))))
 		    (setenv "GOPATH" gopath)
 		    (zero? (system* "go" "install" "github.com/btcsuite/btclog")))))
        (replace 'check
@@ -596,6 +596,114 @@ wallet functionality and this was a very intentional design decision.")
 default implementation of a subsystem-aware leveled logger implementing the same
 interface.")
    (license license:isc)))
+
+(define-public go-seelog
+  (package
+   (name "go-seelog")
+   (version "2.6")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append "https://github.com/cihub/seelog/archive/v"
+			 version
+			 ".tar.gz"))
+     (sha256
+      (base32
+       "0m43n968rxn2103s1hyg7rq4wnr9fwkfbhbvk1c1ayms5rx3gvb8"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("go" ,go)))
+   (arguments
+    `(#:phases
+      (modify-phases
+       %standard-phases
+       (delete 'configure)
+       (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/cihub/seelog"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/cihub/seelog"))))
+       (replace 'build
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let* ((cwd (getcwd))
+			 (gopath
+			  (string-append
+			   (getcwd)
+			   "/../gopath:"
+			   ,(with-store
+			     store
+			     (package-output store go-randbuf)))))
+		    (setenv "GOPATH" gopath)
+		    (zero? (system* "go" "install" "github.com/cihub/seelog")))))
+       (delete 'check)
+       ;; (replace 'check
+       ;; 		(lambda* _
+       ;; 		  (zero? (system* "go" "test" "github.com/cihub/seelog"))))
+       (replace 'install
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let ((out (assoc-ref outputs "out"))
+			(gopath (string-append (getcwd) "/../gopath")))
+		    (with-directory-excursion
+		     gopath
+		     (copy-recursively "." out))))))))
+   (home-page "https://github.com/cihub/seelog")
+   (synopsis "Provides flexible asynchronous dispatching, filtering, and formatting")
+   (description "Seelog is a powerful and easy-to-learn logging framework that
+provides functionality for flexible dispatching, filtering, and formatting log
+messages.  It is natively written in the Go programming language.")
+   (license license:bsd-3)))
+
+(define-public go-seelog-conformal
+  (package
+   (inherit go-seelog)
+   (name "go-seelog-conformal")
+   (arguments
+    `(#:phases
+      (modify-phases
+       %standard-phases
+       (delete 'configure)
+       (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/conformal/seelog"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/conformal/seelog"))))
+       (replace 'build
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let* ((cwd (getcwd))
+			 (gopath
+			  (string-append
+			   (getcwd)
+			   "/../gopath:"
+			   ,(with-store
+			     store
+			     (package-output store go-randbuf)))))
+		    (setenv "GOPATH" gopath)
+		    (zero? (system* "go" "install" "github.com/conformal/seelog")))))
+       (delete 'check)
+       ;; (replace 'check
+       ;; 		(lambda* _
+       ;; 		  (zero? (system* "go" "test" "github.com/cihub/seelog"))))
+       (replace 'install
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let ((out (assoc-ref outputs "out"))
+			(gopath (string-append (getcwd) "/../gopath")))
+		    (with-directory-excursion
+		     gopath
+		     (copy-recursively "." out))))))))))
 
 (define-public go-libp2p-crypto
   (let ((commit "e89e1de117dd65c6129d99d1d853f48bc847cf17")
