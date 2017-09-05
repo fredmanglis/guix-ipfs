@@ -687,10 +687,7 @@ messages.  It is natively written in the Go programming language.")
 			 (gopath
 			  (string-append
 			   (getcwd)
-			   "/../gopath:"
-			   ,(with-store
-			     store
-			     (package-output store go-randbuf)))))
+			   "/../gopath")))
 		    (setenv "GOPATH" gopath)
 		    (zero? (system* "go" "install" "github.com/conformal/seelog")))))
        (delete 'check)
@@ -781,7 +778,7 @@ messages.  It is natively written in the Go programming language.")
 	     (commit commit)))
        (sha256
 	(base32
-	 "0f13r2jcnbhcl86jclmy7iwz0aldh0zdxya1mrslk7cbfdlg8r23"))))
+	 "05f6dm2dkd22db1pydd54wmm0qrn16n9mgy5favcxc9lf83hawn6"))))
      (build-system gnu-build-system)
      (native-inputs
       `(("go" ,go)))
