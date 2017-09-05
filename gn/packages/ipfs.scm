@@ -943,6 +943,29 @@ provide a package that:
 to test them.")
      (license license:expat))))
 
+(define-public go-nhash
+  (package
+   (inherit go-hashland-minimal)
+   (name "go-nhash")
+   (arguments
+    (substitute-keyword-arguments
+     (package-arguments go-hashland-minimal)
+     ((#:phases phases)
+      `(modify-phases
+	,phases
+	(replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath
+		     (string-append
+		      (getcwd)
+		      "/../gopath")))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/leb.io/hashland/nhash")))))
+	(replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/leb.io/hashland/nhash"))))))))))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
