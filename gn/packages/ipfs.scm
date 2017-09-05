@@ -823,6 +823,65 @@ messages.  It is natively written in the Go programming language.")
      (description "Go supplementary cryptography libraries")
      (license license:bsd-3))))
 
+(define-public go-base58
+  (package
+   (name "go-base58")
+   (version "1.0.0")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append "https://github.com/jbenet/go-base58/archive/"
+			 version
+			 ".tar.gz"))
+     (sha256
+      (base32
+       "0j9mki26vssngyby1fgg4nibf5ja4pzvl2pv7cqrqy6g5lzfi81i"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("go" ,go)))
+   (arguments
+    `(#:phases
+      (modify-phases
+       %standard-phases
+       (delete 'configure)
+       (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/jbenet/go-base58"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/jbenet/go-base58"))))
+       (replace 'build
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let* ((cwd (getcwd))
+			 (gopath (string-append (getcwd) "/../gopath")))
+		    (setenv "GOPATH" gopath)
+		    (zero? (system* "go" "install" "github.com/jbenet/go-base58")))))
+       (replace 'check
+		(lambda* _
+		  (zero? (system* "go" "test" "github.com/jbenet/go-base58"))))
+       (replace 'install
+		(lambda* (#:key outputs #:allow-other-keys)
+		  (let ((out (assoc-ref outputs "out"))
+			(gopath (string-append (getcwd) "/../gopath")))
+		    (with-directory-excursion
+		     gopath
+		     (copy-recursively "." out))))))))
+   (home-page "https://github.com/jbenet/go-base58")
+   (synopsis "Simple base58 codec")
+   (description "Extracted from @uref{https://github.com/conformal/btcutil} to
+provide a package that:
+@itemize @bullet
+@item defaults to base58-check (btc)
+@item allows using different alphabets.
+@end itemize")
+   (license license:isc)))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
