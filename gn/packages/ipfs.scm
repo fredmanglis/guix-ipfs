@@ -3,6 +3,7 @@
 
 (define-module (gn packages ipfs)
   #:use-module (guix store)
+  #:use-module (guix utils)
   #:use-module (gnu packages base)
   #:use-module (gnu packages golang)
   #:use-module (guix download)
@@ -881,6 +882,66 @@ provide a package that:
 @item allows using different alphabets.
 @end itemize")
    (license license:isc)))
+
+(define-public go-hashland-minimal
+  (let ((commit "e13accbe55f7fa03c73c74ace4cca4c425e47260")
+	(revision "1"))
+    (package
+     (name "go-hashland")
+     (version (string-append "0.0.0-" revision "." (string-take commit 7)))
+     (source
+      (origin
+       (method git-fetch)
+       (uri (git-reference
+	     (url "https://github.com/tildeleb/hashland.git")
+	     (commit commit)))
+       (sha256
+	(base32
+	 "1ygfp7kjnm964w2bv61bsyxpw5y6vy6k4pra1lhd5r3nhlxgs31g"))))
+     (build-system gnu-build-system)
+     (native-inputs
+      `(("go" ,go)))
+     (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	'build
+	'setup-go-workspace
+	(lambda* _
+	  (mkdir-p (string-append
+		    (getcwd)
+		    "/../gopath/src/github.com/leb.io/hashland"))
+	  (copy-recursively
+	   (getcwd)
+	   (string-append
+	    (getcwd)
+	    "/../gopath/src/github.com/leb.io/hashland"))))
+       (replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath
+		     (string-append
+		      (getcwd)
+		      "/../gopath")))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/leb.io/hashland")))))
+       (replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/leb.io/hashland"))))
+       (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion
+		       gopath
+		       (copy-recursively "." out))))))))
+     (home-page "https://github.com/tildeleb/hashland")
+     (synopsis "Go versions of murmur, cityhash, jenkins, spooky, sbox, and more")
+     (description "Hashland is a collection of hash functions and functionality
+to test them.")
+     (license license:expat))))
 
 (define-public go-ipfs
   (package
