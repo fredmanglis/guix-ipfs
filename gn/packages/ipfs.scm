@@ -615,7 +615,10 @@ wallet functionality and this was a very intentional design decision.")
 	 "09624wrfwcxxjgdlwfl5l3zwiiv9fr1d2cs009cca6zsb5mziaq5"))))
      (build-system gnu-build-system)
      (native-inputs
-      `(("go" ,go)))
+      `(("go" ,go)
+	("go-gogo-protobuf" ,go-gogo-protobuf)
+	("go-ed25519" ,go-ed25519)
+	("go-btcec" ,go-btcec)))
      (arguments
       `(#:phases
 	(modify-phases
@@ -642,7 +645,13 @@ wallet functionality and this was a very intentional design decision.")
 		      "/../gopath:"
 		      ,(with-store
 			store
-			(package-output store go-randbuf)))))
+			(package-output store go-gogo-protobuf))
+		      ,(with-store
+			store
+			(package-output go-ed25519))
+		      ,(with-store
+			store
+			(package-output go-btcec)))))
 	       (setenv "GOPATH" gopath)
 	       (zero? (system* "go" "install" "github.com/libp2p/go-libp2p-crypto")))))
        (replace 'check
