@@ -369,10 +369,48 @@ length-delimited slices.  It is helpful for building wire protocols.")
 		    ;; figure out what needs be built here. Maybe split it into
 		    ;; separate definitions, all inheriting from a common parent
 		    ;; each building a separate item: proto, gogoproto, etc.
-		    (zero? (system* "go" "install" "github.com/gogo/protobuf")))))
+		    (and
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/codec"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/gogoproto"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/gogoreplace"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/io"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/jsonpb"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/proto"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-gen-combo"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-gen-gofast"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-gen-gogo"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-gen-gogofast"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-gen-gogofaster"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-gen-gogoslick"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-gen-gogotypes"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-gen-gostring"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/protoc-min-version"))))))
        (replace 'check
 		(lambda* _
-		  (zero? (system* "go" "test" "github.com/gogo/protobuf"))))
+		  (and
+		   (zero? (system* "go" "test"
+				   "github.com/gogo/protobuf/codec"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/io"))
+		     (zero? (system* "go" "install"
+				     "github.com/gogo/protobuf/jsonpb"))
+		     (zero? (system* "go" "test"
+				     "github.com/gogo/protobuf/proto")))))
        (replace 'install
 		(lambda* (#:key outputs #:allow-other-keys)
 		  (let ((out (assoc-ref outputs "out"))
