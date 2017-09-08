@@ -488,7 +488,8 @@ extra code generation features.  The code generation is used to achieve:
 			  (gopath (string-append (getcwd) "/../gopath")))
 		      (with-directory-excursion
 		       gopath
-		       (copy-recursively "." out))))))))
+		       (copy-recursively "." out)))))
+       (delete 'reset-gzip-timestamps))))
      (home-page "https://github.com/agl/ed25519")
      (synopsis "ed25519 public-key signature system for Go")
      (description "ed25519 public-key signature system for Go")
