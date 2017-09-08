@@ -495,7 +495,7 @@ extra code generation features.  The code generation is used to achieve:
      (description "ed25519 public-key signature system for Go")
      (license license:bsd-3))))
 
-(define-public go-btcd
+(define-public go-btcd-minimal
   (package
    (name "go-btcd")
    (version "0.12.0-beta")
@@ -574,6 +574,29 @@ transactions based on miner requirements ('standard' transactions).
 One key difference between btcd and Bitcoin Core is that btcd does NOT include
 wallet functionality and this was a very intentional design decision.")
    (license license:isc)))
+
+(define-public go-btcec
+  (package
+   (inherit go-btcd-minimal)
+   (name "go-btcec")
+   (arguments
+    (substitute-keyword-arguments
+     (package-arguments go-btcd-minimal)
+     ((#:phases phases)
+      `(modify-phases
+	,phases
+	(replace 'build
+	   (lambda* (#:key outputs #:allow-other-keys)
+	     (let* ((cwd (getcwd))
+		    (gopath
+		     (string-append
+		      (getcwd)
+		      "/../gopath")))
+	       (setenv "GOPATH" gopath)
+	       (zero? (system* "go" "install" "github.com/btcsuite/btcd/btcec")))))
+       (replace 'check
+	 (lambda* _
+	   (zero? (system* "go" "test" "github.com/btcsuite/btcd/btcec"))))))))))
 
 (define-public go-btclog
   (package
