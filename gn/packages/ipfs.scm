@@ -1021,6 +1021,60 @@ revision (aka MurmurHash3).  Reference algorithm has been slightly hacked as to
 support the streaming mode required by Go's standard Hash interface.")
    (license license:bsd-3)))
 
+(define-public go-multihash
+  (package
+   (name "go-multihash")
+   (version "0.1.0")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append
+	   "https://github.com/multiformats/go-multihash/archive/"
+	   version
+	   ".tar.gz"))
+     (sha256
+      (base32
+       "0viycrhagi0jkqksdagdjhvq8hdiysnk96m762987mhal669lg95"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("go" ,go)))
+   (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	  'build
+	  'setup-go-workspace
+	  (lambda* _
+	    (mkdir-p (string-append
+		      (getcwd)
+		      "/../gopath/src/github.com/multiformats/go-multihash"))
+	    (copy-recursively
+	     (getcwd)
+	     (string-append
+	      (getcwd)
+	      "/../gopath/src/github.com/multiformats/go-multihash"))))
+	 (replace 'build
+		  (lambda* _
+		    (let* ((cwd (getcwd))
+			   (gopath (string-append (getcwd) "/../gopath")))
+		      (setenv "GOPATH" gopath)
+		      (zero? (system* "go" "install" "github.com/multiformats/go-multihash")))))
+	 (replace 'check
+		  (lambda* _
+		    (zero? (system* "go" "test" "github.com/multiformats/go-multihash"))))
+	 (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion gopath
+			(copy-recursively "." out))))))))
+   (home-page "https://github.com/multiformats/go-multihash")
+   (synopsis "Multihash implementation in Go")
+   (description "Multihash implementation in Go")
+   (license license:expat)))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
