@@ -965,6 +965,62 @@ to test them.")
 	 (lambda* _
 	   (zero? (system* "go" "test" "leb.io/hashland/keccakpg"))))))))))
 
+(define-public go-murmur3
+  (package
+   (name "go-murmur3")
+   (version "1.0")
+   (source
+    (origin
+     (method url-fetch)
+     (uri (string-append
+	   "https://github.com/spaolacci/murmur3/archive/v"
+	   version
+	   ".tar.gz"))
+     (sha256
+      (base32
+       "0yzlbpidisi42llwdm8bg43l2sj8g15icgfgbh9hr0hvjzak9pqq"))))
+   (build-system gnu-build-system)
+   (native-inputs
+    `(("go" ,go)))
+   (arguments
+      `(#:phases
+	(modify-phases
+	 %standard-phases
+	 (delete 'configure)
+	 (add-before
+	  'build
+	  'setup-go-workspace
+	  (lambda* _
+	    (mkdir-p (string-append
+		      (getcwd)
+		      "/../gopath/src/github.com/spaolacci/murmur3"))
+	    (copy-recursively
+	     (getcwd)
+	     (string-append
+	      (getcwd)
+	      "/../gopath/src/github.com/spaolacci/murmur3"))))
+	 (replace 'build
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let* ((cwd (getcwd))
+			   (gopath (string-append (getcwd) "/../gopath")))
+		      (setenv "GOPATH" gopath)
+		      (zero? (system* "go" "install" "github.com/spaolacci/murmur3")))))
+	 (replace 'check
+		  (lambda* _
+		    (zero? (system* "go" "test" "github.com/spaolacci/murmur3"))))
+	 (replace 'install
+		  (lambda* (#:key outputs #:allow-other-keys)
+		    (let ((out (assoc-ref outputs "out"))
+			  (gopath (string-append (getcwd) "/../gopath")))
+		      (with-directory-excursion gopath
+			(copy-recursively "." out))))))))
+   (home-page "https://github.com/spaolacci/murmur3")
+   (synopsis "Native MurmurHash3 Go implementation")
+   (description "Native Go implementation of Austin Appleby's third MurmurHash
+revision (aka MurmurHash3).  Reference algorithm has been slightly hacked as to
+support the streaming mode required by Go's standard Hash interface.")
+   (license license:bsd-3)))
+
 (define-public go-ipfs
   (package
     (name "go-ipfs")
