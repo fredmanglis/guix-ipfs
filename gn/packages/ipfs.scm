@@ -942,10 +942,10 @@ provide a package that:
 to test them.")
      (license license:expat))))
 
-(define-public go-nhash
+(define-public go-keccakpg
   (package
    (inherit go-hashland-minimal)
-   (name "go-nhash")
+   (name "go-keccakpg")
    (arguments
     (substitute-keyword-arguments
      (package-arguments go-hashland-minimal)
@@ -960,75 +960,10 @@ to test them.")
 		      (getcwd)
 		      "/../gopath")))
 	       (setenv "GOPATH" gopath)
-	       (zero? (system* "go" "install" "leb.io/hashland/nhash")))))
+	       (zero? (system* "go" "install" "leb.io/hashland/keccakpg")))))
 	(replace 'check
 	 (lambda* _
-	   (zero? (system* "go" "test" "leb.io/hashland/nhash"))))))))))
-
-(define-public go-aeshash
-  (let ((commit "8ba92803f64b76c91b111633cc0edce13347f0d1")
-	(revision "1"))
-    (package
-     (name "go-aeshash")
-     (version (string-append "0.0.0-" revision "." (string-take commit 7)))
-     (source
-      (origin
-       (method git-fetch)
-       (uri (git-reference
-	     (url "https://github.com/tildeleb/aeshash.git")
-	     (commit commit)))
-       (sha256
-	(base32
-	 "13wpz597f935h9cy6li5ck21hi1l2xyfvjrjwznr1902nrj7i36s"))))
-     (build-system gnu-build-system)
-     (native-inputs
-      `(("go" ,go)
-	("go-nhash" ,go-nhash)))
-     (arguments
-      `(#:phases
-	(modify-phases
-	 %standard-phases
-	 (delete 'configure)
-	 (add-before
-	'build
-	'setup-go-workspace
-	(lambda* _
-	  (mkdir-p (string-append
-		    (getcwd)
-		    "/../gopath/src/leb.io/aeshash"))
-	  (copy-recursively
-	   (getcwd)
-	   (string-append
-	    (getcwd)
-	    "/../gopath/src/leb.io/aeshash"))))
-       (replace 'build
-	   (lambda* (#:key outputs #:allow-other-keys)
-	     (let* ((cwd (getcwd))
-		    (gopath
-		     (string-append
-		      (getcwd)
-		      "/../gopath:"
-		      ,(with-store
-		       store
-		       (package-output store go-nhash)))))
-	       (setenv "GOPATH" gopath)
-	       (zero? (system* "go" "install" "leb.io/aeshash")))))
-       (replace 'check
-	 (lambda* _
-	   (zero? (system* "go" "test" "leb.io/aeshash"))))
-       (replace 'install
-		  (lambda* (#:key outputs #:allow-other-keys)
-		    (let ((out (assoc-ref outputs "out"))
-			  (gopath (string-append (getcwd) "/../gopath")))
-		      (with-directory-excursion
-		       gopath
-		       (copy-recursively "." out))))))))
-     (home-page "https://github.com/tildeleb/hashland")
-     (synopsis "Fast hash function that uses the Intel AESENC instruction")
-     (description "Aeshash is a fast hash function extracted from the Go runtime
-that uses the Intel AESENC instruction.  Used by Go's map on Intel x86-64
-architecture.")
-     (license license:bsd-3))))
+	   (zero? (system* "go" "test" "leb.io/hashland/keccakpg"))))))))))
 
 (define-public go-ipfs
   (package
